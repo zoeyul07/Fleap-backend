@@ -60,21 +60,21 @@ class Option(models.Model):
 	base_price = models.IntegerField()
 	max_quantity = models.IntegerField()
 	frip = models.ForeignKey('Frip', on_delete=models.SET_NULL, null=True)
-	option_type = models.OneToOneField('Type', on_delete=models.SET_NULL, null=True)
+	option_type = models.OneToOneField('OptionType', on_delete=models.SET_NULL, null=True)
 	child_option = models.ManyToManyField('ChildOption', through = 'OptionChildOption')
 
 	class Meta:
 		db_table = 'options'
 
 class ChildOption(models.Model):
-	name = models.CharField(max_length=45)
-	price = models.IntegerField()
-	base_price = models.IntegerField()
-	frip = models.ForeignKey('Frip', on_delete=SET_NULL, null=True)
-	option_type = models.OneToOneField('Type', on_delete=SET_NULL, nul=True)
+    name = models.CharField(max_length=45)
+    price = models.IntegerField()
+    base_price = models.IntegerField()
+    frip = models.ForeignKey('Frip', on_delete=models.SET_NULL, null=True)
+    option_type = models.OneToOneField('OptionType', on_delete=models.SET_NULL, null=True)
 	
-	class Meta:
-		db_table = 'child_options'
+    class Meta:
+        db_table = 'child_options'
 
 class ItineraryOption(models.Model):
 	itinerary = models.ForeignKey('Itinerary', on_delete=models.SET_NULL, null=True)
@@ -187,11 +187,12 @@ class Region(models.Model):
 		db_table = 'regions'
 
 class SubRegion(models.Model):
-	name = models.CharField(max_length=45)
-	region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True)
-	frip = models.ManyToManyField('Frip', through='FripSubRegion')
-	class Meta:
-		db_table = 'sub_regions'
+    name = models.CharField(max_length=45)
+    region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True)
+    frip = models.ManyToManyField('Frip', through='FripSubRegion')
+
+    class Meta:
+        db_table = 'sub_regions'
 
 class FripSubRegion(models.Model):
 	frip = models.ForeignKey('Frip', on_delete=models.SET_NULL, null=True)
