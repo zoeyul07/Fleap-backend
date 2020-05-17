@@ -72,7 +72,7 @@ class ChildOption(models.Model):
     base_price = models.IntegerField(blank=True, null=True)
     frip = models.ForeignKey('Frip', on_delete=models.SET_NULL, null=True)
     option_type = models.ForeignKey('OptionType', on_delete=models.SET_NULL, null=True)
-
+    
     class Meta:
         db_table = 'child_options'
 

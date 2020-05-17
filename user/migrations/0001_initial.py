@@ -28,10 +28,10 @@ class Migration(migrations.Migration):
             name='Energy',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=45)),
+                ('name', models.CharField(default='회원가입', max_length=45)),
                 ('energy', models.IntegerField(default=2000)),
-                ('valid_date', models.DateTimeField()),
-                ('created_at', models.DateTimeField()),
+                ('valid_date', models.DateTimeField(default=datetime.datetime(2020, 6, 16, 10, 13, 38, 101152))),
+                ('created_at', models.DateTimeField(default=datetime.datetime(2020, 5, 17, 10, 13, 38, 101175))),
             ],
             options={
                 'db_table': 'energies',
@@ -86,7 +86,11 @@ class Migration(migrations.Migration):
                 ('password', models.CharField(max_length=400, null=True)),
                 ('phone_number', models.CharField(max_length=100, null=True)),
                 ('coupon', models.CharField(max_length=200, null=True)),
+<<<<<<< HEAD
                 ('created_at', models.DateTimeField(default=datetime.datetime(2020, 5, 17, 11, 38, 3, 716828))),
+=======
+                ('created_at', models.DateTimeField(default=datetime.datetime(2020, 5, 17, 10, 13, 38, 100520))),
+>>>>>>> 4c53604... modified user models.py
                 ('updated_at', models.DateTimeField()),
                 ('account', models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, to='user.Account')),
             ],
