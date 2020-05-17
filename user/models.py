@@ -91,7 +91,7 @@ class Purchase(models.Model):
 	payment_method = models.ForeignKey('PaymentMethod', on_delete=models.SET_NULL, null=True)
 	review = models.ForeignKey('Review', on_delete=models.SET_NULL, null=True)
 	status = models.ForeignKey('Status', on_delete=models.SET_NULL, null=True)
-	quaantity = models.IntegerField()
+	quantity = models.IntegerField()
 	created_at = models.DateTimeField()
 
 	class Meta:
