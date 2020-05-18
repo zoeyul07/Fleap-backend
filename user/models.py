@@ -1,15 +1,19 @@
+import datetime
+
 from django.db import models
 
 class User(models.Model):
-	email = models.EmailField(max_length=200, unique=True, null=True)
-	nickname = models.CharField(max_length=200, null=True)
-	password = models.CharField(max_length=400, null=True)
-	phone_number = models.CharField(max_length=100, null=True)
-	coupon = models.CharField(max_length=200, null=True)
-	account = models.OneToOneField('Account', on_delete=models.SET_NULL, null=True)
+        email = models.EmailField(max_length=200, unique=True, null=True)
+        nickname = models.CharField(max_length=200, null=True)
+        password = models.CharField(max_length=400, null=True)
+        phone_number = models.CharField(max_length=100, unique=True, null=True)
+        coupon = models.CharField(max_length=200, null=True)
+        account = models.ForeignKey('Account', on_delete=models.SET_NULL, null=True)
+        created_at = models.DateTimeField(auto_now_add = True)
+        updated_at = models.DateTimeField(auto_now = True, null=True)
 
-	class Meta:
-		db_table = 'users'
+        class Meta:
+                db_table = 'users'
 
 class Account(models.Model):
 	name = models.CharField(max_length=50)
@@ -18,14 +22,14 @@ class Account(models.Model):
 		db_table = 'accounts'
 
 class Energy(models.Model):
-	name = models.CharField(max_length=45)
-	energy = models.IntegerField(default=2000)
-	valid_date = models.DateTimeField()
-	created_at = models.DateTimeField()
-	user = models.ForeignKey('User', on_delete=models.SET_NULL, null=True)
+        name = models.CharField(max_length=45)
+        energy = models.IntegerField(default=2000)
+        valid_date = models.DateTimeField()
+        created_at = models.DateTimeField(auto_now_add = True)
+        user = models.ForeignKey('User', on_delete=models.SET_NULL, null=True)
 
-	class Meta:
-		db_table = 'energies'
+        class Meta:
+                db_table = 'energies'
 
 class UserInterestDetail(models.Model):
 	user = models.ForeignKey('User', on_delete=models.SET_NULL, null=True)
@@ -70,7 +74,7 @@ class Review(models.Model):
 	child_option = models.ForeignKey('frip.ChildOption', on_delete=models.SET_NULL, null=True)
 	grade = models.ForeignKey('Grade', on_delete=models.SET_NULL, null=True)
 	content = models.TextField()
-	created_at = models.DateTimeField()
+	created_at = models.DateTimeField(auto_now_add = True)
 
 	class Meta:
 		db_table = 'reviews'
@@ -92,12 +96,12 @@ class Purchase(models.Model):
 	review = models.ForeignKey('Review', on_delete=models.SET_NULL, null=True)
 	status = models.ForeignKey('Status', on_delete=models.SET_NULL, null=True)
 	quantity = models.IntegerField()
-	created_at = models.DateTimeField()
+	created_at = models.DateTimeField(auto_now_add = True)
 
 	class Meta:
 		db_table = 'purchases'
 
-class status(models.Model):
+class Status(models.Model):
 	name = models.CharField(max_length=45)
 
 	class Meta:
@@ -108,4 +112,3 @@ class PaymentMethod(models.Model):
 
 	class Meta:
 		db_table = 'payment_methods'
-
