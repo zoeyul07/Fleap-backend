@@ -1,30 +1,30 @@
 from django.db import models
 
 class Frip(models.Model):
-	title = models.CharField(max_length=200)
-	catch_phrase = models.CharField(max_length=300)
-	price= models.IntegerField()
-	faked_price = models.IntegerField()
-	duedate = models.IntegerField()
-	location = models.CharField(max_length=300)
-	venue = models.CharField(max_length=1000)
-	venue_lng = models.DecimalField(max_digits=10, decimal_places=6)
-	venue_lat = models.DecimalField(max_digits=10, decimal_places=6)
-	gathering_place = models.CharField(max_length=1000)
-	geopoint_lng = models.DecimalField(max_digits=10, decimal_places=6)
-	geopoint_lat = models.DecimalField(max_digits=10, decimal_places=6)
-	today = models.BooleanField()
-	ticket = models.BooleanField()
-	sale = models.BooleanField(default=0)
-	dateValidFrom = models.DateTimeField()
-	dateValidTo = models.DateTimeField()
-	created_at = models.DateTimeField()
-	updated_at = models.DateTimeField()
-	host = models.ForeignKey('Host', on_delete=models.SET_NULL, null=True)
-	detail = models.OneToOneField('Detail', on_delete=models.SET_NULL, null=True)
+        title = models.CharField(max_length=200)
+        catch_phrase = models.CharField(max_length=300)
+        price= models.IntegerField()
+        faked_price = models.IntegerField(blank=True, null=True)
+        duedate = models.IntegerField(blank=True, null=True)
+        location = models.CharField(max_length=300)
+        venue = models.CharField(max_length=1000)
+        venue_lng = models.DecimalField(max_digits=10, decimal_places=6)
+        venue_lat = models.DecimalField(max_digits=10, decimal_places=6)
+        gathering_place = models.CharField(max_length=1000)
+        geopoint_lng = models.DecimalField(max_digits=10, decimal_places=6)
+        geopoint_lat = models.DecimalField(max_digits=10, decimal_places=6)
+        today = models.BooleanField()
+        ticket = models.BooleanField()
+        sale = models.BooleanField(default=0)
+        dateValidFrom = models.DateTimeField(null=True)
+        dateValidTo = models.DateTimeField(null=True)
+        created_at = models.DateTimeField()
+        updated_at = models.DateTimeField(auto_now = True, null=True)
+        host = models.ForeignKey('Host', on_delete=models.SET_NULL, null=True)
+        detail = models.OneToOneField('Detail', on_delete=models.SET_NULL, null=True)
 
-	class Meta:
-		db_table = 'frips'
+        class Meta:
+                db_table = 'frips'
 
 class Detail(models.Model):
 	content = models.TextField()
@@ -56,11 +56,11 @@ class Itinerary(models.Model):
 
 class Option(models.Model):
 	name = models.CharField(max_length=200)
-	price = models.IntegerField()
-	base_price = models.IntegerField()
+	price = models.IntegerField(blank=True, null=True)
+	base_price = models.IntegerField(blank=True, null=True)
 	max_quantity = models.IntegerField()
 	frip = models.ForeignKey('Frip', on_delete=models.SET_NULL, null=True)
-	option_type = models.OneToOneField('OptionType', on_delete=models.SET_NULL, null=True)
+	option_type = models.ForeignKey('OptionType', on_delete=models.SET_NULL, null=True)
 	child_option = models.ManyToManyField('ChildOption', through = 'OptionChildOption')
 
 	class Meta:
@@ -68,11 +68,11 @@ class Option(models.Model):
 
 class ChildOption(models.Model):
     name = models.CharField(max_length=45)
-    price = models.IntegerField()
-    base_price = models.IntegerField()
+    price = models.IntegerField(blank=True, null=True)
+    base_price = models.IntegerField(blank=True, null=True)
     frip = models.ForeignKey('Frip', on_delete=models.SET_NULL, null=True)
-    option_type = models.OneToOneField('OptionType', on_delete=models.SET_NULL, null=True)
-	
+    option_type = models.ForeignKey('OptionType', on_delete=models.SET_NULL, null=True)
+
     class Meta:
         db_table = 'child_options'
 
@@ -114,7 +114,7 @@ class SecondCategory(models.Model):
 	name = models.CharField(max_length=45)
 	first_category = models.ForeignKey('FirstCategory', on_delete=models.SET_NULL, null=True)
 	frip = models.ManyToManyField('Frip', through='FripCategory')
-	
+
 	class Meta:
 		db_table = 'second_categories'
 
@@ -169,7 +169,7 @@ class FripEvent(models.Model):
 class Theme(models.Model):
 	name = models.CharField(max_length=200)
 	frip = models.ManyToManyField('Frip', through='FripTheme')
-	
+
 	class Meta:
 		db_table = 'themes'
 
