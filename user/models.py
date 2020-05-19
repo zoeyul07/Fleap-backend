@@ -22,11 +22,11 @@ class Account(models.Model):
 		db_table = 'accounts'
 
 class Energy(models.Model):
-        name = models.CharField(max_length=45)
-        energy = models.IntegerField(default=2000)
-        valid_date = models.DateTimeField()
-        created_at = models.DateTimeField(auto_now_add = True)
-        user = models.ForeignKey('User', on_delete=models.SET_NULL, null=True)
+	name = models.CharField(max_length=45, default='오늘부터 1일')
+	energy = models.IntegerField(default=2000)
+	valid_date = models.DateTimeField(default=datetime.datetime.now()+datetime.timedelta(days=30))
+	created_at = models.DateTimeField(auto_now_add=True)
+	user = models.ForeignKey('User', on_delete=models.SET_NULL, null=True)
 
         class Meta:
                 db_table = 'energies'
