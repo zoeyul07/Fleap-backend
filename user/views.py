@@ -1,15 +1,15 @@
-
 import re
 import jwt
 import bcrypt
 import json
+import requests
 
 from django.views import View
 from django.http import HttpResponse, JsonResponse
 from django.db import IntegrityError
 
 from .models import User
-from fleap.settings import SECRET_KEY
+from fleap.settings import SECRET_KEY, ALGORITHM
 
 
 class SignUpView(View):
@@ -61,3 +61,30 @@ class SignInView(View):
 
         except KeyError:
             return JsonResponse({"message": "INVALID_KEYS"}, status=400)
+
+class KakaoView(View):
+    def post(self, request):
+        token = request.headers['Authorization']
+        
+        if not token:
+            return JsonResponse({'message':'TOKEN_REQUIRED'}, status=400)
+        
+        user_request = requests.get('https://kapi.kakao.com/v2/user/me', headers={'Authorization':f'Bearer {token}'})
+        user_information = user_request.json()['properties']
+        kakao_id = user_request.json()['id']
+        nickname = user_information.get('nickname', None)
+
+        if User.objects.filter(kakao_id=kakao_id).exists():
+            user = User.objects.get(kakao_id=kakao_id)
+            access_token= jwt.encode({'id':user.id}, SECRET_KEY, algorithm='HS256')
+            
+            return JsonResponse({'access_token':access_token.decode('utf-8'), 'nickname':user.kakao_name}, status=200)
+
+        else:
+            user = User.objects.create(
+                kakao_id = kakao_id,
+                kakao_name = nickname
+            )
+            access_token = jwt.encode({'id':user.id}, SECRET_KEY, algorithm='HS256')
+            
+            return JsonResponse({'access_token':access_token.decode('utf-8'),'nickname':nickname}, status=200)

@@ -3,17 +3,19 @@ import datetime
 from django.db import models
 
 class User(models.Model):
-	email = models.EmailField(max_length=200, unique=True, null=True)
-	nickname = models.CharField(max_length=200, null=True)
-	password = models.CharField(max_length=400, null=True)
-	phone_number = models.CharField(max_length=100, unique=True, null=True)
-	coupon = models.CharField(max_length=200, null=True)
-	account = models.ForeignKey('Account', on_delete=models.SET_NULL, null=True)
-	created_at = models.DateTimeField(auto_now_add = True)
-	updated_at = models.DateTimeField(auto_now = True, null=True)
-	
-	class Meta:
-		db_table = 'users'
+        email = models.EmailField(max_length=200, unique=True, null=True)
+        nickname = models.CharField(max_length=200, null=True)
+        kakao_id = models.IntegerField(unique=True, null=True)
+        kakao_name = models.CharField(max_length=200, null=True)
+        password = models.CharField(max_length=400, null=True)
+        phone_number = models.CharField(max_length=100, unique=True, null=True)
+        coupon = models.CharField(max_length=200, null=True)
+        account = models.ForeignKey('Account', on_delete=models.SET_NULL, null=True)
+        created_at = models.DateTimeField(auto_now_add = True)
+        updated_at = models.DateTimeField(auto_now = True, null=True)
+
+        class Meta:
+                db_table = 'users'
 
 class Account(models.Model):
 	name = models.CharField(max_length=50)
