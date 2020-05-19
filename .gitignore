@@ -1,6 +1,6 @@
 
-# Created by https://www.gitignore.io/api/linux,macos,django,python,pycharm
-# Edit at https://www.gitignore.io/?templates=linux,macos,django,python,pycharm
+# Created by https://www.gitignore.io/api/linux,macos,django,python,pycharm,visualstudiocode
+# Edit at https://www.gitignore.io/?templates=linux,macos,django,python,pycharm,visualstudiocode
 
 ### Django ###
 *.log
@@ -299,4 +299,15 @@ fabric.properties
 
 # Pyre type checker
 
-# End of https://www.gitignore.io/api/linux,macos,django,python,pycharm
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+
+# End of https://www.gitignore.io/api/linux,macos,django,python,pycharm,visualstudiocode
