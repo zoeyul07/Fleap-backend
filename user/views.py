@@ -48,11 +48,11 @@ class SignUpView(View):
             for field, validator in self.VALIDATION_RULES.items():
                 if not validator(data[field]):
                     return HttpResponse(status=400)
-
+            
             User.objects.create(
                 email=data['email'],
-                password=bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
-            )
+                password=bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),           
+                )
             return HttpResponse(status=200)
 
         except IntegrityError:
@@ -69,6 +69,7 @@ class SignInView(View):
 
                 if bcrypt.checkpw(data['password'].encode('utf-8'), user.password.encode('utf-8')):
                     token = jwt.encode({'id': user.id}, SECRET_KEY, ALGORITHM).decode('utf-8')
+                    
                     return JsonResponse({"token": token}, status=200)
                 return HttpResponse(status=401)
             return HttpResponse(status=401)
@@ -99,9 +100,8 @@ class KakaoView(View):
                 kakao_id = kakao_id,
                 kakao_name = nickname
             )
-
             access_token = jwt.encode({'id':user.id}, SECRET_KEY, ALGORITHM)
-
+            
             return JsonResponse({'access_token':access_token.decode('utf-8'),'nickname':nickname}, status=200)
 
 class LikeView(View):

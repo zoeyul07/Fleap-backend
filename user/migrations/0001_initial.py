@@ -31,11 +31,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(default='오늘부터 1일', max_length=45)),
                 ('energy', models.IntegerField(default=2000)),
-<<<<<<< HEAD
-                ('valid_date', models.DateTimeField(default=datetime.datetime(2020, 6, 21, 3, 28, 19, 328280))),
-=======
                 ('valid_date', models.DateTimeField(default=datetime.datetime(2020, 6, 21, 3, 50, 42, 207599))),
->>>>>>> cd42f4b... Add: search view, endpoint
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],
             options={
@@ -92,6 +88,7 @@ class Migration(migrations.Migration):
                 ('kakao_name', models.CharField(max_length=200, null=True)),
                 ('password', models.CharField(max_length=400, null=True)),
                 ('phone_number', models.CharField(max_length=100, null=True, unique=True)),
+                ('auth_number', models.IntegerField(blank=True, null=True)),
                 ('coupon', models.CharField(max_length=200, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True, null=True)),
@@ -159,7 +156,6 @@ class Migration(migrations.Migration):
                 ('quantity', models.IntegerField()),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('child_option', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='frip.ChildOption')),
-                ('energy', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='user.Energy')),
                 ('frip', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='frip.Frip')),
                 ('itinerary', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='frip.Itinerary')),
                 ('option', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='frip.Option')),
@@ -183,9 +179,18 @@ class Migration(migrations.Migration):
                 'db_table': 'interest_details',
             },
         ),
-        migrations.AddField(
-            model_name='energy',
-            name='user',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='user.User'),
+        migrations.CreateModel(
+            name='Energy',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(default='오늘부터 1일', max_length=45)),
+                ('energy', models.IntegerField(default=2000)),
+                ('valid_date', models.DateTimeField(default=datetime.datetime(2020, 6, 21, 2, 52, 31, 435316))),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='user.User')),
+            ],
+            options={
+                'db_table': 'energies',
+            },
         ),
     ]
