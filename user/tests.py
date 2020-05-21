@@ -7,6 +7,7 @@ import unittest
 from django.test import TestCase
 from django.test import Client
 from unittest.mock import patch, MagicMock
+from django.core.management import call_command
 
 from fleap.settings import SECRET_KEY
 from .models import User
@@ -113,3 +114,41 @@ class SignInTest(TestCase):
         }
         response = client.post('/user/sign-in', json.dumps(User), content_type='application/json')
         self.assertEqual(response.status_code, 401)
+
+class KakaoView(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        User.objects.create(
+            kakao_id = 12345,
+            kakao_name = 'kakao'
+        )
+
+
+    def test_no_token(self):
+        client = Client()
+        
+        response = client.post('/user/kakao', **{'HTTP_Authorization' : ''}, content_type = 'application/json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(),{'message':'TOKEN_REQUIRED'})
+        print("no token test end")
+    
+
+    @patch('user.views.requests')
+    def test_user_exist(self, request):
+        class MockedResponse:
+            def json(self):
+                return {
+                    'id':12345,
+                    'properties':{'nickname':'kakao'}
+                }
+        request.get = MagicMock(return_value=MockedResponse()) 
+        client = Client()
+        header = {'HTTP_Authorization' : '1234ABCD'}
+        response = client.post('/user/kakao', **header, content_type = 'application/json')
+        token = jwt.encode({'id':1}, SECRET_KEY, algorithm='HS256').decode('utf-8')
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(),{'access_token':token, 'nickname':'kakao'})
+
