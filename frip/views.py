@@ -314,7 +314,6 @@ class MainView(View):
 
             new_frips=Frip.objects.filter(created_at__gte=timezone.now()-datetime.timedelta(days=60),created_at__lte=timezone.now())
             is_new=[new_frip.id for new_frip in new_frips]
-            won = "원"
 
             try:
                 user_id = request.user.id
@@ -326,7 +325,7 @@ class MainView(View):
                     "catch_phrase":frip.catch_phrase,
                     "title":frip.title,
                     "image":[image.image_url for image in Image.objects.filter(frip_id=frip.id)][0],
-                    "price":format(frip.price, ",")+won,
+                    "price":frip.price,
                     "faked_price": frip.faked_price,
                     "new":True if frip.id in is_new else False,
                     "grade": Review.objects.filter(frip_id=frip.id).aggregate(Avg('grade__number')).get('grade__number__avg'),
