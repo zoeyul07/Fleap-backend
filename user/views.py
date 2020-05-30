@@ -3,12 +3,18 @@ import jwt
 import bcrypt
 import json
 import requests
+import datetime
 
-from django.views import View
-from django.http import HttpResponse, JsonResponse
-from django.db import IntegrityError
+from django.views       import View
+from django.http        import HttpResponse, JsonResponse
+from django.db          import IntegrityError
+from django.db.models   import Avg
+from django.utils       import timezone
 
-from .models import User
+from .models            import User, UserFrip, Interest, InterestDetail, Review, Purchase
+from frip.models        import Frip, SubRegion, Image
+from .utils             import login_check
+
 from fleap.settings import SECRET_KEY, ALGORITHM
 
 
@@ -65,10 +71,10 @@ class SignInView(View):
 class KakaoView(View):
     def post(self, request):
         token = request.headers['Authorization']
-        
+
         if not token:
             return JsonResponse({'message':'TOKEN_REQUIRED'}, status=400)
-        
+
         user_request = requests.get('https://kapi.kakao.com/v2/user/me', headers={'Authorization':f'Bearer {token}'})
         user_information = user_request.json()['properties']
         kakao_id = user_request.json()['id']
@@ -77,7 +83,7 @@ class KakaoView(View):
         if User.objects.filter(kakao_id=kakao_id).exists():
             user = User.objects.get(kakao_id=kakao_id)
             access_token= jwt.encode({'id':user.id}, SECRET_KEY, algorithm='HS256')
-            
+
             return JsonResponse({'access_token':access_token.decode('utf-8'), 'nickname':user.kakao_name}, status=200)
 
         else:
@@ -86,5 +92,28 @@ class KakaoView(View):
                 kakao_name = nickname
             )
             access_token = jwt.encode({'id':user.id}, SECRET_KEY, algorithm='HS256')
-            
+
             return JsonResponse({'access_token':access_token.decode('utf-8'),'nickname':nickname}, status=200)
+
+class LikeView(View):
+    @login_check
+    def post(self,request):
+        try:
+            data = json.loads(request.body)
+            like=int(data['like'])
+            user_id  = request.user.id
+            frip_id  = data['frip_id']
+
+            if UserFrip.objects.filter(user_id=user_id, frip_id=frip_id).exists():
+                UserFrip.objects.filter(
+                    user_id  = request.user.id,
+                    frip_id  = data['frip_id']
+                ).delete()
+            elif  UserFrip.objects.filter(user_id=user_id, frip_id=frip_id).exists():
+                UserFrip.objects.create(
+                    user_id  = request.user.id,
+                    frip_id = data['frip_id'])
+            return HttpResponse(status=200)
+
+        except KeyError:
+            return JsonResponse({"message":"INVALID_KEYS"},status=401)
