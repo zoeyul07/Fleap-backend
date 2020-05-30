@@ -2,16 +2,26 @@ import json
 import random
 import datetime
 
-from django.views import View
-from django.http import HttpResponse, JsonResponse
-from django.db.models import Count, Avg,  Q, Sum
-from django.utils       import timezone
+from django.views      import View
+from django.http       import HttpResponse, JsonResponse
+from django.db.models  import Count, Avg,  Q, Sum
+from django.utils      import timezone
 
-from .models import Frip, Image, Detail, Host, SubRegion, FripSubRegion, Event
-from user.models import UserFrip, Review, Energy, PaymentMethod
-from user.utils  import login_check, login_check_frip
+from .models           import Frip, Image, Detail, Host, SubRegion, FripSubRegion, Event
+from user.models       import UserFrip, Review, Energy, PaymentMethod
+from user.utils        import login_check, login_check_frip
+
 
 FRIP_REVIEW_LIMIT=1
+
+def find_location(frip_id):
+    if SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() == 1:
+        return SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
+    elif  SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() > 1 :
+        location=SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
+        return f'{location} 외 {SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count()-1} 지역'
+    else :
+        return None
 
 class DetailView(View):
     def get(self, request, products_id):
@@ -83,15 +93,6 @@ class DetailView(View):
         }for product in Frip.objects.select_related('host', 'detail').prefetch_related('image_set', 'review_set', 'itinerary_set', 'option_set', 'childoption_set').filter(id=products_id)]
 
         return JsonResponse({'detail':frip}, status=200)
-
-def find_location(frip_id):
-    if SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() == 1:
-        return SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
-    elif  SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() > 1 :
-        location=SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
-        return f'{location} 외 {SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count()-1} 지역'
-    else :
-        return None
 
 class DailyView(View):
     @login_check_frip
@@ -246,3 +247,84 @@ class DailyView(View):
             for region in region_dict.keys()]
 
         return JsonResponse({"region_data":sub_region_list,"data":frip_list},status=200)
+
+class MainView(View):
+    @login_check_frip
+    def get(self, request):
+            FILTER_RULES = {
+                "userfrip__user_id" : lambda userfrip__user_id: True if tag == "hotfrip" else False,
+                "sale" : lambda sale : True if tag == "sale" else False,
+                "host__super_host" : lambda host__super_host: True if tag == "superhost" else False,
+                "secondcategory__name" : lambda secondcategory__name: "공예·DIY" if tag == "enjoy" else False,
+                "thirdcategory__name" : lambda thirdcategory__name: "서핑" if event == "surfing" else False,
+            }
+
+            is_slider = request.GET.get('slider', None)
+            limit = int(request.GET.get('limit', 20))
+            tag = request.GET.get('tag', None)
+            event = request.GET.get('event', None)
+            all_event = request.GET.get('all', None)
+
+            if is_slider is not None:
+                slider = {
+                "firstSlider" : list(Event.objects.values_list('image_url', flat=True))[0:4],
+                "secondSlider" : list(Event.objects.values_list('image_url', flat=True))[4:6],
+                }
+                return JsonResponse({"slider": slider}, status=200)
+
+            if tag == 'newfrip': 
+                filter_dict = {}
+                filter_dict['created_at__range'] = [timezone.now()-datetime.timedelta(days=60),timezone.now()] 
+
+            for filters, rules in FILTER_RULES.items():
+                if rules(filters) == True:
+                    filter_dict = {filters : rules(filters)}
+                if rules(filters) == [timezone.now()-datetime.timedelta(days=60),timezone.now()]:
+                    filter_dict = {filters : rules(filters)}
+                if rules(filters) == "공예·DIY":
+                    filter_dict = {filters : rules(filters)}
+                if rules(filters) == "서핑":
+                    filter_dict = {filters : rules(filters)}
+
+            frips = Frip.objects.filter(**filter_dict)
+
+            if tag == "newfrip":
+                frips = frips.order_by('-created_at')[:limit]
+            if tag == "hotfrip":
+                frips = Frip.objects.prefetch_related('userfrip_set').annotate(count=Count('userfrip__id')).order_by('?')[:limit]
+            if tag == "superhost":
+                frips = frips.order_by('?')[:limit]
+            if tag == "enjoy":
+                frips = frips.order_by('?')[:limit]
+            if event == "서핑":
+                frips = frips.order_by('?')[:limit]
+
+            new_frips=Frip.objects.filter(created_at__gte=timezone.now()-datetime.timedelta(days=60),created_at__lte=timezone.now())
+            is_new=[new_frip.id for new_frip in new_frips]
+            won = "원"
+
+            try:
+                user_id = request.user.id
+            except:
+                user_id = None
+
+            frip_list = [
+                    {"frip_id":frip.id,
+                    "catch_phrase":frip.catch_phrase,
+                    "title":frip.title,
+                    "image":[image.image_url for image in Image.objects.filter(frip_id=frip.id)][0],
+                    "price":format(frip.price, ",")+won,
+                    "faked_price": frip.faked_price,
+                    "new":True if frip.id in is_new else False,
+                    "grade": Review.objects.filter(frip_id=frip.id).aggregate(Avg('grade__number')).get('grade__number__avg'),
+                    "location":find_location(frip.id)
+                    } for frip in frips]
+
+            return JsonResponse({"data": frip_list}, status=200)
+
+
+
+
+
+
+
