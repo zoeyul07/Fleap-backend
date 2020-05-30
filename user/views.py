@@ -21,6 +21,15 @@ from fleap.settings import SECRET_KEY, ALGORITHM
 EMAIL_REGEX = r"^[a-zA-Z0-9!#$%^&*\-_=+{}]+@[a-zA-Z0-9]+\.[a-zA-Z]{2,}$"
 PASSWORD_REGEX = r"^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@.#^* ?+=_~])[A-Za-z\d!@.#^* ?+=_~]{8,}$"
 
+def find_location(frip_id):
+    if SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() == 1:
+        return SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
+    elif SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() > 1 :
+        location=SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
+        return f'{location} 외 {SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count()-1} 지역'
+    else :
+        return None
+
 class SignUpView(View):
     VALIDATION_RULES = {
         'email': lambda email: False if not re.match(EMAIL_REGEX, email) else True,
@@ -128,15 +137,6 @@ class InterestCategoryView(View):
                       "name":detail.name}for detail in InterestDetail.objects.filter(interest_id=interest)]}for interest in interests]
 
         return JsonResponse({"data":interest_list},status=200)
-
-def find_location(frip_id):
-    if SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() == 1:
-        return SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
-    elif SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() > 1 :
-        location=SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
-        return f'{location} 외 {SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count()-1} 지역'
-    else :
-        return None
 
 class InterestFripView(View):
     @login_check
