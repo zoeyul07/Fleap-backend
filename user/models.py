@@ -9,6 +9,7 @@ class User(models.Model):
         kakao_name = models.CharField(max_length=200, null=True)
         password = models.CharField(max_length=400, null=True)
         phone_number = models.CharField(max_length=100, unique=True, null=True)
+        auth_number  = models.IntegerField(blank=True, null=True)
         coupon = models.CharField(max_length=200, null=True)
         account = models.ForeignKey('Account', on_delete=models.SET_NULL, null=True)
         created_at = models.DateTimeField(auto_now_add = True)
@@ -93,7 +94,7 @@ class Purchase(models.Model):
 	itinerary = models.ForeignKey('frip.Itinerary', on_delete=models.SET_NULL, null=True)
 	option = models.ForeignKey('frip.Option', on_delete=models.SET_NULL, null=True)
 	child_option = models.ForeignKey('frip.ChildOption', on_delete=models.SET_NULL, null=True)
-	energy = models.ForeignKey('Energy', on_delete=models.SET_NULL, null=True)
+	used_energy = models.IntegerField(blank=True, null=True),
 	payment_method = models.ForeignKey('PaymentMethod', on_delete=models.SET_NULL, null=True)
 	review = models.ForeignKey('Review', on_delete=models.SET_NULL, null=True)
 	status = models.ForeignKey('Status', on_delete=models.SET_NULL, null=True)

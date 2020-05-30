@@ -11,8 +11,11 @@ from .models           import Frip, Image, Detail, Host, SubRegion, FripSubRegio
 from user.models       import UserFrip, Review, Energy, PaymentMethod
 from user.utils        import login_check, login_check_frip
 
+from .models import Frip, Image, Detail, Host, SubRegion, FripSubRegion, Event
+from user.models import UserFrip, Review, Energy, PaymentMethod, Purchase
+from user.utils  import login_check, login_check_frip
 
-FRIP_REVIEW_LIMIT=1
+LIMIT=1
 
 def find_location(frip_id):
     if SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() == 1:
@@ -26,6 +29,8 @@ def find_location(frip_id):
 class DetailView(View):
     def get(self, request, products_id):
         frip =[{
+            'id' : product.id,
+            'ticket' : product.ticket,   
             'image_url':[one.image_url for one in  product.image_set.all()],
             'catch_phrase':product.catch_phrase,
             'title' : product.title,
@@ -37,13 +42,18 @@ class DetailView(View):
             'location' : product.location,
             'review_average': [
                 Review.objects.select_related('grade').filter(frip_id=products_id).aggregate(Avg('grade__number')).get('grade__number__avg') if product.host.review_set.all() else None],
+            'like_number' : product.userfrip_set.aggregate(Count('frip_id')).get('frip_id__count'),
+            'duedate' : product.duedate,
+            'location' : product.location,
+            'review_average': 
+                Review.objects.select_related('grade').filter(frip_id=products_id).aggregate(Avg('grade__number')).get('grade__number__avg') if product.host.review_set.all() else None,
             'host':{
                 'host_image' :  product.host.image_url,
                 'host_name' : product.host.name,
                 'description' : product.host.description,
                 'super_host' : product.host.super_host
             },
-            'review' :[{
+            'review' :[{    
                 'user_name' : review.user.nickname,
                 'grade' : review.grade.number,
                 'created_at' : review.created_at,
@@ -51,14 +61,14 @@ class DetailView(View):
                 'itinerary': review.itinerary.start_date if review.itinerary else None,
                 'option' :review.option.name,
                 'child_option': review.child_option.name if review.child_option else None
-            } for review in Review.objects.select_related('itinerary','grade','user','option','child_option').filter(host_id=product.host_id) if product.review_set.all()][:FRIP_REVIEW_LIMIT],
+            } for review in Review.objects.select_related('itinerary','grade','user','option','child_option').filter(host_id=product.host_id) if product.review_set.all()][:LIMIT],
             'content' : product.detail.content,
-           'include' : product.detail.include,
+            'include' : product.detail.include,
             'exclude' : product.detail.exclude,
             'schedule': product.detail.schedule,
             'material' : product.detail.material,
             'notice' : product.detail.notice,
-            'vennue' : {
+            'venue' : {
                 'location' : product.venue,
                 'venue_lng' : product.venue_lng,
                 'venue_lat' : product.venue_lat
@@ -70,11 +80,13 @@ class DetailView(View):
             },
             'choice' : {
                 'itinerary':[{
-                    'start_date' : itinerary.start_date,
+                    'id' : itinerary.id,
+                    'start_date' : itinerary.start_date, 
                     'end_date' :itinerary.end_date,
                     'max_quantity' : itinerary.max_quantity,
                 }for itinerary in  product.itinerary_set.all() if product.itinerary_set.all()],
                 'option':[{
+                    'id' : option.id,
                     'title' : option.name if product.option_set.filter(option_type=1) else None,
                     'content' : option.name if product.option_set.filter(option_type=0) else None,
                     'max_quantity' : option.max_quantity if option.max_quantity else None,
@@ -83,6 +95,7 @@ class DetailView(View):
                     'option_type' : option.option_type.name
                 }for option in product.option_set.all()],
                 'child_option' : [{
+                    'id' : child.id,
                     'title' : child.name if product.childoption_set.filter(option_type=1) else None,
                     'content' : child.name if product.childoption_set.filter(option_type=0) else None,
                     'price' : child.price,
@@ -345,3 +358,53 @@ class SearchView(View):
                     } for frip in frip_search]
 
         return JsonResponse({"data": frip_list}, status=200)
+
+class PurchaseView(View):
+    @login_check
+    def get(self, request, products_id):
+        purchase = [{
+            'image' : [one.image_url for one in  product.image_set.all()][:LIMIT],
+            'title' : product.title,
+            'catch_phrase' : product.catch_phrase,
+            'energy' : Energy.objects.filter(user_id=request.user.id).aggregate(Sum('energy')).get('energy__sum'),
+            'payment_method' :[{
+                'id': method.id,
+                'name' : method.name
+            }for method in PaymentMethod.objects.all()]
+        }for product in Frip.objects.prefetch_related('image_set').filter(id=products_id)]
+
+        return JsonResponse({'purchase':purchase}, status=200)
+
+    def get_option(self, data):
+        if 'itinerary_id' not in data:
+            data['itinerary'] = None
+
+        if 'child_option_id' not in data:
+            data['child_option'] = None
+
+        if 'ticket' == 1:
+            data['status'] = 0
+
+        else:
+            data['status'] = 1
+        
+        return data
+
+    @login_check    
+    def post(self, request, products_id):
+        data = json.loads(request.body)
+        
+        self.get_option(data)
+        
+        Purchase.objects.create(
+            user = request.user,
+            frip_id = products_id,
+            itinerary_id= data['itinerary'],
+            option_id = data['option'],
+            child_option_id = data['child_option'],
+            payment_method_id = data['payment_method'],
+            quantity = data['quantity'],
+            status_id = data['status']
+        )
+        return HttpResponse(status=200)
+
