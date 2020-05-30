@@ -128,3 +128,62 @@ class InterestCategoryView(View):
                       "name":detail.name}for detail in InterestDetail.objects.filter(interest_id=interest)]}for interest in interests]
 
         return JsonResponse({"data":interest_list},status=200)
+
+def find_location(frip_id):
+    if SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() == 1:
+        return SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
+    elif SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() > 1 :
+        location=SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
+        return f'{location} 외 {SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count()-1} 지역'
+    else :
+        return None
+
+class InterestFripView(View):
+    @login_check
+    def get(self,request):
+        user_id  = request.user.id
+        interestfrips=UserFrip.objects.select_related('frip').filter(user_id=user_id)
+
+        new_frips=Frip.objects.filter(created_at__gte=timezone.now()-datetime.timedelta(days=60),created_at__lte=timezone.now())
+        is_new=[new_frip.id for new_frip in new_frips]
+
+        frip_list=[
+                 {
+                  "frip_id":interestfrip.frip.id,
+                  "catch_phrase":interestfrip.frip.catch_phrase,
+                  "title":interestfrip.frip.title,
+                  "location":find_location(interestfrip.frip.id),
+                  "image":[image.image_url for image in Image.objects.filter(frip_id=interestfrip.frip.id)][0],
+                  "price":interestfrip.frip.price,
+                  "faked_price":interestfrip.frip.faked_price,
+                  "new":True if interestfrip.frip.id in is_new else False,
+                  "grade":Review.objects.filter(frip_id=interestfrip.frip.id).aggregate(Avg('grade__number')).get('grade__number__avg'),
+                  }for interestfrip in interestfrips]
+
+        return JsonResponse({"data":frip_list},status=200)
+
+class MyFripView(View):
+    @login_check
+    def get(self,request):
+        status = request.GET.get('status',None)
+        user_id = request.user.id
+
+        purchasefrips=Purchase.objects.filter(user_id=user_id,status_id=status)
+
+        new_frips=Frip.objects.filter(created_at__gte=timezone.now()-datetime.timedelta(days=60),created_at__lte=timezone.now())
+        is_new=[new_frip.id for new_frip in new_frips]
+
+        frip_list=[
+                 {
+                  "frip_id":purchasefrip.frip.id,
+                  "catch_phrase":purchasefrip.frip.catch_phrase,
+                  "title":purchasefrip.frip.title,
+                  "location":find_location(purchasefrip.frip.id),
+                  "image":[image.image_url for image in Image.objects.filter(frip_id=purchasefrip.frip.id)][0],
+                  "price":purchasefrip.frip.price,
+                  "faked_price":purchasefrip.frip.faked_price,
+                  "new":True if purchasefrip.frip.id in is_new else False,
+                  "grade":Review.objects.filter(frip_id=purchasefrip.frip.id).aggregate(Avg('grade__number')).get('grade__number__avg'),
+                  }for purchasefrip in purchasefrips]
+
+        return JsonResponse({"data":frip_list},status=200)
