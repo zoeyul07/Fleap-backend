@@ -33,7 +33,7 @@ class DetailView(View):
                 'description' : product.host.description,
                 'super_host' : product.host.super_host
             },
-            'review' :[{    
+            'review' :[{
                 'user_name' : review.user.nickname,
                 'grade' : review.grade.number,
                 'created_at' : review.created_at,
@@ -60,7 +60,7 @@ class DetailView(View):
             },
             'choice' : {
                 'itinerary':[{
-                    'start_date' : itinerary.start_date, 
+                    'start_date' : itinerary.start_date,
                     'end_date' :itinerary.end_date,
                     'max_quantity' : itinerary.max_quantity,
                 }for itinerary in  product.itinerary_set.all() if product.itinerary_set.all()],
@@ -81,7 +81,7 @@ class DetailView(View):
                 }for child in product.childoption_set.all() if product.childoption_set.all()]
             }
         }for product in Frip.objects.select_related('host', 'detail').prefetch_related('image_set', 'review_set', 'itinerary_set', 'option_set', 'childoption_set').filter(id=products_id)]
-        
+
         return JsonResponse({'detail':frip}, status=200)
 
 def find_location(frip_id):
