@@ -18,19 +18,19 @@ from .utils             import login_check
 from fleap.settings import SECRET_KEY, ALGORITHM
 
 
+EMAIL_REGEX = r"^[a-zA-Z0-9!#$%^&*\-_=+{}]+@[a-zA-Z0-9]+\.[a-zA-Z]{2,}$"
+PASSWORD_REGEX = r"^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@.#^* ?+=_~])[A-Za-z\d!@.#^* ?+=_~]{8,}$"
+
 class SignUpView(View):
     VALIDATION_RULES = {
-        'email': lambda email: False if not re.match(r"^[a-zA-Z0-9!#$%^&*\-_=+{}]+@[a-zA-Z0-9]+\.[a-zA-Z]{2,}$", email) else True,
-        'password': lambda password: False if not re.match(r"^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@.#^* ?+=_~])[A-Za-z\d!@.#^* ?+=_~]{8,}$", password) else True
+        'email': lambda email: False if not re.match(EMAIL_REGEX, email) else True,
+        'password': lambda password: False if not re.match(PASSWORD_REGEX, password) else True
     }
 
     def post(self, request):
         try:
             data = json.loads(request.body)
-            if User.objects.filter(email=data['email']).exists():
-                return JsonResponse({"message": "ALREADY_EXISTS"}, status=400)
-
-            if len(data.keys()) < 2:
+            if len(data.keys()) != 2:
                 return HttpResponse(status=400)
             for value in data.values():
                 if value in "":
@@ -51,7 +51,6 @@ class SignUpView(View):
         except KeyError:
             return JsonResponse({"message": "INVALID_KEYS"}, status=400)
 
-
 class SignInView(View):
     def post(self, request):
         data = json.loads(request.body)
@@ -60,7 +59,7 @@ class SignInView(View):
                 user = User.objects.get(email=data['email'])
 
                 if bcrypt.checkpw(data['password'].encode('utf-8'), user.password.encode('utf-8')):
-                    token = jwt.encode({'id': user.id}, SECRET_KEY, algorithm='HS256').decode('utf-8')
+                    token = jwt.encode({'id': user.id}, SECRET_KEY, ALGORITHM).decode('utf-8')
                     return JsonResponse({"token": token}, status=200)
                 return HttpResponse(status=401)
             return HttpResponse(status=401)
@@ -82,8 +81,8 @@ class KakaoView(View):
 
         if User.objects.filter(kakao_id=kakao_id).exists():
             user = User.objects.get(kakao_id=kakao_id)
-            access_token= jwt.encode({'id':user.id}, SECRET_KEY, algorithm='HS256')
-
+            access_token= jwt.encode({'id':user.id}, SECRET_KEY, ALGORITHM)
+            
             return JsonResponse({'access_token':access_token.decode('utf-8'), 'nickname':user.kakao_name}, status=200)
 
         else:
@@ -91,7 +90,8 @@ class KakaoView(View):
                 kakao_id = kakao_id,
                 kakao_name = nickname
             )
-            access_token = jwt.encode({'id':user.id}, SECRET_KEY, algorithm='HS256')
+
+            access_token = jwt.encode({'id':user.id}, SECRET_KEY, ALGORITHM)
 
             return JsonResponse({'access_token':access_token.decode('utf-8'),'nickname':nickname}, status=200)
 
