@@ -117,3 +117,14 @@ class LikeView(View):
 
         except KeyError:
             return JsonResponse({"message":"INVALID_KEYS"},status=401)
+
+class InterestCategoryView(View):
+    def get(self,request):
+        interests=Interest.objects.all()
+        interest_list=[
+            {"id":interest.id,
+             "name":interest.name,
+             "data":[{"id":detail.id,
+                      "name":detail.name}for detail in InterestDetail.objects.filter(interest_id=interest)]}for interest in interests]
+
+        return JsonResponse({"data":interest_list},status=200)
