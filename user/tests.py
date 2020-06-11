@@ -132,7 +132,6 @@ class KakaoView(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(),{'message':'TOKEN_REQUIRED'})
-        print("no token test end")
     
 
     @patch('user.views.requests')
