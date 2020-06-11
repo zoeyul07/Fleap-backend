@@ -8,12 +8,8 @@ from django.db.models  import Count, Avg,  Q, Sum
 from django.utils      import timezone
 
 from .models           import Frip, Image, Detail, Host, SubRegion, FripSubRegion, Event
-from user.models       import UserFrip, Review, Energy, PaymentMethod
+from user.models       import UserFrip, Review, Energy, PaymentMethod, Purchase
 from user.utils        import login_check, login_check_frip
-
-from .models import Frip, Image, Detail, Host, SubRegion, FripSubRegion, Event
-from user.models import UserFrip, Review, Energy, PaymentMethod, Purchase
-from user.utils  import login_check, login_check_frip
 
 LIMIT=1
 
@@ -28,6 +24,7 @@ def find_location(frip_id):
 
 class DetailView(View):
     def get(self, request, product_id):
+        product = Frip.objects.select_related('host', 'detail').prefetch_related('image_set', 'review_set', 'itinerary_set', 'option_set', 'childoption_set').get(id=product_id)
         frip =[{
             'id' : product.id,
             'ticket' : product.ticket,   
@@ -40,8 +37,7 @@ class DetailView(View):
             'like_number' : product.userfrip_set.aggregate(Count('frip_id')).get('frip_id__count'),
             'duedate' : product.duedate,
             'location' : product.location,
-            'review_average': 
-                Review.objects.select_related('grade').filter(host_id=product.host_id).aggregate(Avg('grade__number')).get('grade__number__avg'),
+            'review_average': product.review_set.aggregate(Avg('grade__number')).get('grade__number__avg'),
             'host':{
                 'host_image' :  product.host.image_url,
                 'host_name' : product.host.name,
@@ -98,7 +94,7 @@ class DetailView(View):
                     'option_type' : child.option_type.name
                 }for child in product.childoption_set.all()]
             }
-        }for product in Frip.objects.select_related('host', 'detail').prefetch_related('image_set', 'review_set', 'itinerary_set', 'option_set', 'childoption_set').filter(id=product_id)]
+        }]
 
         return JsonResponse({'detail':frip}, status=200)
 
@@ -377,10 +373,10 @@ class PurchaseView(View):
             data['child_option'] = None
 
         if 'ticket' == 1:
-            data['status'] = 0
+            data['status'] = 1
 
         else:
-            data['status'] = 1
+            data['status'] = 2
         
         return data
 
