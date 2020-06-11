@@ -1,38 +1,38 @@
 from django.db import models
 
 class Frip(models.Model):
-        title = models.CharField(max_length=200)
-        catch_phrase = models.CharField(max_length=300)
-        price= models.IntegerField()
-        faked_price = models.IntegerField(blank=True, null=True)
-        duedate = models.IntegerField(blank=True, null=True)
-        location = models.CharField(max_length=300)
-        venue = models.CharField(max_length=1000)
-        venue_lng = models.DecimalField(max_digits=10, decimal_places=6)
-        venue_lat = models.DecimalField(max_digits=10, decimal_places=6)
-        gathering_place = models.CharField(max_length=1000)
-        geopoint_lng = models.DecimalField(max_digits=10, decimal_places=6)
-        geopoint_lat = models.DecimalField(max_digits=10, decimal_places=6)
-        today = models.BooleanField()
-        ticket = models.BooleanField()
-        sale = models.BooleanField(default=0)
-        dateValidFrom = models.DateTimeField(null=True)
-        dateValidTo = models.DateTimeField(null=True)
-        created_at = models.DateTimeField()
-        updated_at = models.DateTimeField(auto_now = True, null=True)
-        host = models.ForeignKey('Host', on_delete=models.SET_NULL, null=True)
-        detail = models.OneToOneField('Detail', on_delete=models.SET_NULL, null=True)
+        title           = models.CharField(max_length              = 200)
+        catch_phrase    = models.CharField(max_length              = 300)
+        price           = models.IntegerField()
+        faked_price     = models.IntegerField(blank                = True, null            = True)
+        duedate         = models.IntegerField(blank                = True, null            = True)
+        location        = models.CharField(max_length              = 300)
+        venue           = models.CharField(max_length              = 1000)
+        venue_lng       = models.DecimalField(max_digits           = 10, decimal_places    = 6)
+        venue_lat       = models.DecimalField(max_digits           = 10, decimal_places    = 6)
+        gathering_place = models.CharField(max_length              = 1000)
+        geopoint_lng    = models.DecimalField(max_digits           = 10, decimal_places    = 6)
+        geopoint_lat    = models.DecimalField(max_digits           = 10, decimal_places    = 6)
+        today           = models.BooleanField()
+        ticket          = models.BooleanField()
+        sale            = models.BooleanField(default              = 0)
+        date_valid_from   = models.DateTimeField(null                = True)
+        date_valid_to     = models.DateTimeField(null                = True)
+        created_at      = models.DateTimeField()
+        updated_at      = models.DateTimeField(auto_now            = True, null            = True)
+        host            = models.ForeignKey('Host', on_delete      = models.SET_NULL, null = True)
+        detail          = models.OneToOneField('Detail', on_delete = models.SET_NULL, null = True)
 
         class Meta:
-                db_table = 'frips'
+            db_table = 'frips'
 
 class Detail(models.Model):
-	content = models.TextField()
-	include = models.TextField()
-	exclude = models.TextField()
+	content  = models.TextField()
+	include  = models.CharFiled(max_length = 2000)
+	exclude  = models.TextField()
 	schedule = models.TextField()
 	material = models.TextField()
-	notice = models.TextField()
+	notice   = models.TextField()
 
 	class Meta:
 		db_table = 'details'
@@ -45,22 +45,22 @@ class Image(models.Model):
 		db_table = 'images'
 
 class Itinerary(models.Model):
-	start_date = models.DateTimeField()
-	end_date = models.DateTimeField()
+	start_date   = models.DateTimeField()
+	end_date     = models.DateTimeField()
 	max_quantity = models.IntegerField()
-	frip = models.ForeignKey('Frip', on_delete=models.SET_NULL, null=True)
-	option = models.ManyToManyField('Option', through='ItineraryOption')
+	frip         = models.ForeignKey('Frip', on_delete      = models.SET_NULL, null = True)
+	option       = models.ManyToManyField('Option', through = 'ItineraryOption')
 
 	class Meta:
 		db_table = 'itineraries'
 
 class Option(models.Model):
-	name = models.CharField(max_length=200)
-	price = models.IntegerField(blank=True, null=True)
-	base_price = models.IntegerField(blank=True, null=True)
+	name         = models.CharField(max_length                   = 200)
+	price        = models.IntegerField(blank                     = True, null            = True)
+	base_price   = models.IntegerField(blank                     = True, null            = True)
 	max_quantity = models.IntegerField()
-	frip = models.ForeignKey('Frip', on_delete=models.SET_NULL, null=True)
-	option_type = models.ForeignKey('OptionType', on_delete=models.SET_NULL, null=True)
+	frip         = models.ForeignKey('Frip', on_delete           = models.SET_NULL, null = True)
+	option_type  = models.ForeignKey('OptionType', on_delete     = models.SET_NULL, null = True)
 	child_option = models.ManyToManyField('ChildOption', through = 'OptionChildOption')
 
 	class Meta:
@@ -77,8 +77,8 @@ class ChildOption(models.Model):
         db_table = 'child_options'
 
 class ItineraryOption(models.Model):
-	itinerary = models.ForeignKey('Itinerary', on_delete=models.SET_NULL, null=True)
-	option = models.ForeignKey('Option', on_delete=models.SET_NULL, null=True)
+	itinerary = models.ForeignKey('Itinerary', on_delete = models.SET_NULL, null = True)
+	option    = models.ForeignKey('Option', on_delete    = models.SET_NULL, null = True)
 
 	class Meta:
 		db_table = 'itineraries_options'
@@ -96,7 +96,7 @@ class OptionType(models.Model):
 	class Meta:
 		db_table = 'option_types'
 
-class MainTab(models.Model):
+class MainCategories(models.Model):
 	name = models.CharField(max_length=45)
 
 	class Meta:
@@ -187,9 +187,9 @@ class Region(models.Model):
 		db_table = 'regions'
 
 class SubRegion(models.Model):
-    name = models.CharField(max_length=45)
-    region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True)
-    frip = models.ManyToManyField('Frip', through='FripSubRegion')
+    name   = models.CharField(max_length            = 45)
+    region = models.ForeignKey('Region', on_delete  = models.SET_NULL, null = True)
+    frip   = models.ManyToManyField('Frip', through = 'FripSubRegion')
 
     class Meta:
         db_table = 'sub_regions'

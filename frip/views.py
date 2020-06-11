@@ -7,12 +7,11 @@ from django.http       import HttpResponse, JsonResponse
 from django.db.models  import Count, Avg,  Q, Sum
 from django.utils      import timezone
 
-from .models           import Frip, Image, Detail, Host, SubRegion, FripSubRegion, Event
-from user.models       import UserFrip, Review, Energy, PaymentMethod, Purchase
-from user.utils        import login_check, login_check_frip
+from .models     import Frip, Image, Detail, Host, SubRegion, FripSubRegion, Event
+from user.models import UserFrip, Review, Energy, PaymentMethod, Purchase
+from user.utils  import login_check, login_check_frip
 
-LIMIT=1
-
+# same as user
 def find_location(frip_id):
     if SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() == 1:
         return SubRegion.objects.filter(fripsubregion__frip_id=frip_id).first().name
@@ -23,8 +22,48 @@ def find_location(frip_id):
         return None
 
 class DetailView(View):
+    LIMIT=1
+
     def get(self, request, product_id):
-        product = Frip.objects.select_related('host', 'detail').prefetch_related('image_set', 'review_set', 'itinerary_set', 'option_set', 'childoption_set').get(id=product_id)
+        limit  = request.GET.get('limit', 1) 
+        offset = request.GET.get('offset', 0) 
+
+        product = (
+            Frip
+            .objects
+            .select_related('host', 'detail')
+            .prefetch_related(
+                'image_set',
+                'review_set',
+                'itinerary_set',
+                'option_set',
+                'childoption_set'
+            ).get(id=product_id)
+        )
+
+        reviews = (
+            Review
+            .objects
+            .select_related('itinerary','grade','user','option','child_option')
+            .filter(host_id=product.host_id)[offset:LIMIT]
+        )
+        reviews = [{    
+            'user_name'    : review.user.nickname,
+            'grade'        : review.grade.number,
+            'created_at'   : review.created_at,
+            'content'      : review.content,
+            'itinerary'    : review.itinerary.start_date if review.itinerary else None,
+            'option'       : review.option.name,
+            'child_option' : review.child_option.name if review.child_option else None
+        } for review in reviews]
+
+        iteriay = [{
+            'id'           : itinerary.id,
+            'start_date'   : itinerary.start_date,
+            'end_date'     : itinerary.end_date,
+            'max_quantity' : itinerary.max_quantity,
+        } for itinerary in product.itinerary_set.all()]
+
         frip =[{
             'id' : product.id,
             'ticket' : product.ticket,   
@@ -44,15 +83,7 @@ class DetailView(View):
                 'description' : product.host.description,
                 'super_host' : product.host.super_host
             },
-            'review' :[{    
-                'user_name' : review.user.nickname,
-                'grade' : review.grade.number,
-                'created_at' : review.created_at,
-                'content' : review.content,
-                'itinerary': review.itinerary.start_date if review.itinerary else None,
-                'option' :review.option.name,
-                'child_option': review.child_option.name if review.child_option else None
-            } for review in Review.objects.select_related('itinerary','grade','user','option','child_option').filter(host_id=product.host_id)][:LIMIT],
+            'review' : reviews,
             'content' : product.detail.content,
             'include' : product.detail.include,
             'exclude' : product.detail.exclude,
@@ -65,17 +96,12 @@ class DetailView(View):
                 'venue_lat' : product.venue_lat
             },
             'gathering_place': {
-                'location' : product.gathering_place,
+                'location'     : product.gathering_place,
                 'geopoint_lng' : product.geopoint_lng,
                 'geopoint_lat' : product.geopoint_lat
             },
             'choice' : {
-                'itinerary':[{
-                    'id' : itinerary.id,
-                    'start_date' : itinerary.start_date, 
-                    'end_date' :itinerary.end_date,
-                    'max_quantity' : itinerary.max_quantity,
-                }for itinerary in product.itinerary_set.all()],
+                'itinerary': ininerary,
                 'option':[{
                     'id' : option.id,
                     'title' : option.name if product.option_set.filter(option_type=1) else None,
@@ -101,63 +127,45 @@ class DetailView(View):
 class DailyView(View):
     @login_check_frip
     def get(self,request):
-        first_category = request.GET.get('fid',None)
-        second_category = request.GET.get('sid',None)
-        third_category = request.GET.get('tid',None)
-        limit = int(request.GET.get('limit',20))
-        offset = int(request.GET.get('offset',0))
-        tag = request.GET.get('tag',None)
-        startdate = str(request.GET.get('startdate',"1920-01-01"))
-        enddate = str(request.GET.get('enddate', "2030-01-01"))
-        location = request.GET.get('location',None)
-        order_by = request.GET.get('order_by',None)
-        include = request.GET.getlist('include',None)
-        province = request.GET.get('province',None)
+        limit           = int(request.GET.get('limit',20))
+        offset          = int(request.GET.get('offset',0))
 
-        filter_dict={}
-        region_filter_dict={}
+        startdate       = str(request.GET.get('startdate',"1920-01-01"))
+        enddate         = str(request.GET.get('enddate', "2030-01-01"))
+        location        = request.GET.get('location',None)
+        order_by        = request.GET.get('order_by',None)
+        include         = request.GET.getlist('include',None)
+        province        = request.GET.get('province',None)
 
-        if first_category:
-            filter_dict['firstcategory'] = first_category
-            region_filter_dict['frip__firstcategory'] = first_category
-        if second_category:
-            filter_dict['secondcategory'] = second_category
-            region_filter_dict['frip__secondcategory'] = second_category
-        if third_category:
-            filter_dict['thirdcategory'] = third_category
-            region_filter_dict['frip__thirdcategory'] = third_category
-        if tag == 'new':
-            filter_dict['created_at__range'] = [timezone.now()-datetime.timedelta(days=60),timezone.now()]
-            region_filter_dict['frip__created_at__range'] = [timezone.now()-datetime.timedelta(days=60),timezone.now()]
-        if startdate:
-            if enddate:
-                filter_dict['dateValidTo__date__gte'] = startdate
-                region_filter_dict['frip__dateValidFrom__date__gte'] = startdate
-        if 'today' in include:
-            filter_dict['today'] = True
-            region_filter_dict['frip__today'] = True
-        if 'superhost' in include:
-            filter_dict['host__super_host'] = True
-            region_filter_dict['frip__host__super_host'] = True
-        if location is not None:
-            filter_dict['subregion'] = location
-            region_filter_dict['id'] = location
-        if province is not None:
-            filter_dict['subregion__region_id'] = province
-            region_filter_dict['region_id'] = province
+        tag             = request.GET.get('tag',None)
+        filter_params = {
+            'first_category' : request.GET.get('first_category'),
+            'created_at__range' : [timezone.now()-datetime.timedelta(days=60),timezone.now()] if tag == 'new' else None,
+            ...
 
-        frips=Frip.objects.filter(**filter_dict)
+        }
 
-        new_frips=Frip.objects.filter(created_at__gte=timezone.now()-datetime.timedelta(days=60),created_at__lte=timezone.now())
-        is_new=[new_frip.id for new_frip in new_frips]
+        new_filter = { }
+        for filter in filter_params:
+            new_filter[filter] = filter_params[filter] if filter_params[filter]
+
+        frips = Frip.objects.filter(**data)
 
         if tag == 'new' or order_by == 'latest':
-            frips=frips.order_by('-created_at')
+            frips = frips.order_by('-created_at')
+
+        if order_by == 'low_price':
+            frips = frips.order_by('price')
+
+        if order_by == 'high_price':
+            frips = frips.order_by('-price')
 
         if tag == 'hot' or order_by == 'popular':
             count_dict={}
+
             for hot_frip in frips:
                 count_dict[hot_frip.id]=UserFrip.objects.filter(frip_id=hot_frip.id).count()
+
             frips=[]
             for key, value in sorted(count_dict.items(), key=lambda item: item[1], reverse=True):
                 frips.append(Frip.objects.get(id=key))
@@ -176,17 +184,8 @@ class DailyView(View):
         if tag == 'pick':
             random_number= random.randrange(1,6)
             frips=frips.order_by('?')[:random_number]
-
-        if order_by == 'low_price':
-            frips=frips.order_by('price')
-
-        if order_by == 'high_price':
-            frips=frips.order_by('-price')
-
-        try:
-            user_id = request.user.id
-        except:
-            user_id = None
+            
+        user_id = getattr(request.user.id, None)
 
         frip_list=[
                 {
@@ -214,6 +213,7 @@ class DailyView(View):
 
         find_subregion_frip_dict={}
         find_subregion_frip_list=[]
+
         for filter_frip_id in frips:
             frip_subregion=FripSubRegion.objects.filter(frip_id=filter_frip_id)
             for count_subregion in frip_subregion:
@@ -224,12 +224,11 @@ class DailyView(View):
             find_subregion_frip_dict[subregion_count_dict]=find_subregion_frip_list.count(subregion_count_dict)
 
         find_subregion_region={}
-        for i in regions:
-            find_subregion_region[i.id]=i.region.id
-
         region_dict={}
         subregion_dict={}
-        for city in regions:
+
+        for region in regions:
+            find_subregion_region[region.id] = region.region.id
             region_dict[city.region.id]=city.region.name
             subregion_dict[city.id]=city.name
 
@@ -253,15 +252,17 @@ class DailyView(View):
         return JsonResponse({"region_data":sub_region_list,"data":frip_list},status=200)
 
 class MainView(View):
+    FILTER_RULES = {
+        "userfrip__user_id" : lambda userfrip__user_id: True if tag == "hotfrip" else False,
+        "sale" : lambda sale : True if tag == "sale" else False,
+        "host__super_host" : lambda host__super_host: True if tag == "superhost" else False,
+        "secondcategory__name" : lambda secondcategory__name: "공예·DIY" if tag == "enjoy" else False,
+        "thirdcategory__name" : lambda thirdcategory__name: "서핑" if event == "surfing" else False,
+    }
+
     @login_check_frip
     def get(self, request):
-            FILTER_RULES = {
-                "userfrip__user_id" : lambda userfrip__user_id: True if tag == "hotfrip" else False,
-                "sale" : lambda sale : True if tag == "sale" else False,
-                "host__super_host" : lambda host__super_host: True if tag == "superhost" else False,
-                "secondcategory__name" : lambda secondcategory__name: "공예·DIY" if tag == "enjoy" else False,
-                "thirdcategory__name" : lambda thirdcategory__name: "서핑" if event == "surfing" else False,
-            }
+
 
             is_slider = request.GET.get('slider', None)
             limit = int(request.GET.get('limit', 20))

@@ -6,7 +6,7 @@ urlpatterns = [
     path('/sign-in', SignInView.as_view()),
     path('/kakao', KakaoView.as_view()),
     path('/like', LikeView.as_view()),
-    path('/interestdetail',InterestCategoryView.as_view()),
-    path('/interestfrip',InterestFripView.as_view()),
+    path('/interest-detail',InterestCategoryView.as_view()),
+    path('/interest-frip',InterestFripView.as_view()),
     path('/myfrip',MyFripView.as_view())
 ]
