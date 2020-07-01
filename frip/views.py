@@ -27,7 +27,7 @@ class DetailView(View):
         product = Frip.objects.select_related('host', 'detail').prefetch_related('image_set', 'review_set', 'itinerary_set', 'option_set', 'childoption_set').get(id=product_id)
         frip =[{
             'id' : product.id,
-            'ticket' : product.ticket,   
+            'ticket' : product.ticket,
             'image_url':[one.image_url for one in  product.image_set.all()],
             'catch_phrase':product.catch_phrase,
             'title' : product.title,
@@ -44,7 +44,7 @@ class DetailView(View):
                 'description' : product.host.description,
                 'super_host' : product.host.super_host
             },
-            'review' :[{    
+            'review' :[{
                 'user_name' : review.user.nickname,
                 'grade' : review.grade.number,
                 'created_at' : review.created_at,
@@ -72,7 +72,7 @@ class DetailView(View):
             'choice' : {
                 'itinerary':[{
                     'id' : itinerary.id,
-                    'start_date' : itinerary.start_date, 
+                    'start_date' : itinerary.start_date,
                     'end_date' :itinerary.end_date,
                     'max_quantity' : itinerary.max_quantity,
                 }for itinerary in product.itinerary_set.all()],
@@ -276,9 +276,9 @@ class MainView(View):
                 }
                 return JsonResponse({"slider": slider}, status=200)
 
-            if tag == 'newfrip': 
+            if tag == 'newfrip':
                 filter_dict = {}
-                filter_dict['created_at__range'] = [timezone.now()-datetime.timedelta(days=60),timezone.now()] 
+                filter_dict['created_at__range'] = [timezone.now()-datetime.timedelta(days=60),timezone.now()]
 
             for filters, rules in FILTER_RULES.items():
                 if rules(filters) == True:
@@ -327,12 +327,18 @@ class MainView(View):
             return JsonResponse({"data": frip_list}, status=200)
 
 class SearchView(View):
+    @login_check_frip
     def get(self, request):
         keyword = request.GET.get('keyword', None)
         frip_search = Frip.objects.filter(Q(title__icontains=keyword) | Q(detail__content__icontains=keyword)).distinct()
 
         new_frips=Frip.objects.filter(created_at__gte=timezone.now()-datetime.timedelta(days=60),created_at__lte=timezone.now())
         is_new=[new_frip.id for new_frip in new_frips]
+
+        try:
+            user_id = request.user.id
+        except:
+            user_id = None
 
         frip_list = [
                     {"frip_id":frip.id,
@@ -377,15 +383,15 @@ class PurchaseView(View):
 
         else:
             data['status'] = 2
-        
+
         return data
 
-    @login_check    
+    @login_check
     def post(self, request, product_id):
         data = json.loads(request.body)
-        
+
         self.get_option(data)
-        
+
         Purchase.objects.create(
             user_id = request.user.id,
             frip_id = product_id,
