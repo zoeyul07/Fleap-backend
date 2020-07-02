@@ -24,6 +24,3 @@
 - MySQL
 - AWS EC2, RDS
 - CORS headers
-
-## API
-- [GET]
