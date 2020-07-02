@@ -4,9 +4,9 @@
 - [Frip website](https://www.frip.co.kr/) clone.
 - Develop Member (3 Front-End , 3 Back-End)
 - Back-End Developer Member
-[김서율](https://github.com/zoeyul07)
-[이가람](https://github.com/Magrfs)
-[최진아](https://github.com/2cong)
+  - [김서율](https://github.com/zoeyul07)
+  - [이가람](https://github.com/Magrfs)
+  - [최진아](https://github.com/2cong)
 - develop period : '20.05.11. ~ '20.05.22.
 
 ## Demo
