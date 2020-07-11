@@ -1,4 +1,4 @@
-# Frip Clone Project
+# Frip 
 
 ## Introduction
 - [Frip website](https://www.frip.co.kr/) clone.
