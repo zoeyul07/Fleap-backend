@@ -11,7 +11,6 @@ from .models           import Frip, Image, Detail, Host, SubRegion, FripSubRegio
 from user.models       import UserFrip, Review, Energy, PaymentMethod, Purchase
 from user.utils        import login_check, login_check_frip
 
-LIMIT=1
 
 def find_location(frip_id):
     if SubRegion.objects.filter(fripsubregion__frip_id=frip_id).count() == 1:
@@ -24,7 +23,26 @@ def find_location(frip_id):
 
 class DetailView(View):
     def get(self, request, product_id):
-        product = Frip.objects.select_related('host', 'detail').prefetch_related('image_set', 'review_set', 'itinerary_set', 'option_set', 'childoption_set').get(id=product_id)
+        product = (
+                Frip
+                .objects
+                .select_related('host', 'detail')
+                .prefetch_related(
+                    'image_set', 
+                    'review_set', 
+                    'itinerary_set', 
+                    'option_set', 
+                    'childoption_set'
+                ).get(id=product_id)
+            )
+        review = (
+                Review
+                .objects
+                .select_related('itinerary','grade','user','option','child_option')
+                .filter(host_id=product.host_id)
+                .last()
+            )
+        
         frip =[{
             'id' : product.id,
             'ticket' : product.ticket,
@@ -44,7 +62,7 @@ class DetailView(View):
                 'description' : product.host.description,
                 'super_host' : product.host.super_host
             },
-            'review' :[{
+            'review' :{
                 'user_name' : review.user.nickname,
                 'grade' : review.grade.number,
                 'created_at' : review.created_at,
@@ -52,7 +70,7 @@ class DetailView(View):
                 'itinerary': review.itinerary.start_date if review.itinerary else None,
                 'option' :review.option.name,
                 'child_option': review.child_option.name if review.child_option else None
-            } for review in Review.objects.select_related('itinerary','grade','user','option','child_option').filter(host_id=product.host_id)][:LIMIT],
+            }if review else None,
             'content' : product.detail.content,
             'include' : product.detail.include,
             'exclude' : product.detail.exclude,
@@ -96,7 +114,7 @@ class DetailView(View):
             }
         }]
 
-        return JsonResponse({'detail':frip}, status=200)
+        return JsonResponse({'detail' : frip}, status = 200)
 
 class DailyView(View):
     @login_check_frip
@@ -359,7 +377,7 @@ class PurchaseView(View):
     @login_check
     def get(self, request, product_id):
         purchase = [{
-            'image' : [one.image_url for one in  product.image_set.all()][:LIMIT],
+            'image' : product.image_set.first().image_url,
             'title' : product.title,
             'catch_phrase' : product.catch_phrase,
             'energy' : Energy.objects.filter(user_id=request.user.id).aggregate(Sum('energy')).get('energy__sum'),
@@ -369,7 +387,7 @@ class PurchaseView(View):
             }for method in PaymentMethod.objects.all()]
         }for product in Frip.objects.prefetch_related('image_set').filter(id=product_id)]
 
-        return JsonResponse({'purchase':purchase}, status=200)
+        return JsonResponse({'purchase' : purchase}, status = 200)
 
     def get_option(self, data):
         if 'itinerary_id' not in data:
@@ -402,5 +420,22 @@ class PurchaseView(View):
             quantity = data['quantity'],
             status_id = data['status']
         )
-        return HttpResponse(status=200)
+        return HttpResponse(status = 200)
 
+class ReviewView(View):
+    def get(self, request, product_id):
+        host = Frip.objects.select_related('host').get(id=product_id).host.id
+        review_list = [{
+            'user_name' : review.user.nickname,
+            'grade' : review.grade.number,
+            'content' : review.content,
+            'itinerary' : [{
+                'start_date' : review.itinerary.start_date,
+                'end_date' : review.itinerary.end_date
+            }if review.itinerary else None],
+            'option' : review.option.name,
+            'child_option' : review.child_option.name if review.child_option else None,
+            'created_at' : review.created_at
+        }for review in Review.objects.select_related('user', 'grade', 'itinerary', 'option', 'child_option').filter(host_id=host)]
+
+        return JsonResponse({'review' : review_list}, status = 200)

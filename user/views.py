@@ -95,14 +95,13 @@ class KakaoView(View):
 
             return JsonResponse({'access_token':access_token.decode('utf-8'), 'nickname':user.kakao_name}, status=200)
 
-        else:
-            user = User.objects.create(
-                kakao_id = kakao_id,
-                kakao_name = nickname
-            )
-            access_token = jwt.encode({'id':user.id}, SECRET_KEY, ALGORITHM)
+        user = User.objects.create(
+            kakao_id = kakao_id,
+            kakao_name = nickname
+        )
+        access_token = jwt.encode({'id':user.id}, SECRET_KEY, ALGORITHM)
 
-            return JsonResponse({'access_token':access_token.decode('utf-8'),'nickname':nickname}, status=200)
+        return JsonResponse({'access_token':access_token.decode('utf-8'),'nickname':nickname}, status=200)
 
 class LikeView(View):
     @login_check
