@@ -1,5 +1,3 @@
-# Frip 
-
 ## Introduction
 - [Frip website](https://www.frip.co.kr/) clone.
 - Develop Member (3 Front-End , 3 Back-End)
